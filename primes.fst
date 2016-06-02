@@ -1,6 +1,6 @@
 module Primes
 
-let op_Star = op_Multiply
+let op_Star = op_Multiply // reverse effect of --universes
 
 type cexists (#a:Type) (p:a -> Type) : Type =
   | ExIntro : x:a -> h:p x -> cexists p
@@ -21,11 +21,11 @@ let isPrime n = n <> 1 && isNotDivisor n 2 (n / 2)
 
 type prime = x:pos{isPrime x}
 
-let conclusion_0 (p:prime) (n:_{1 < n /\ n < p}): Tot (u:_{p <= 2 \/ isNotDivisor p n 1}) =
+let conclusion_0 (p:prime) (n:_{1 < n /\ n < p}): Lemma (p <= 2 \/ isNotDivisor p n 1) =
   let rec f n d r (a:int{isNotDivisor n d r /\ d <= a /\ a < d + r}):
-      Tot (u:_{a * a > n \/ n % a <> 0}) (decreases r) =
+      GTot (u:_{a * a > n \/ n % a <> 0}) (decreases r) =
     if d <> a then f n (d + 1) (r - 1) a
-    in if n < p/2 then f p 2 (p/2) n
+    in if n < p / 2 then f p 2 (p / 2) n
 
 val gcd: a:nat -> b:nat -> Tot nat (decreases %[b;a])
 let rec gcd a b =
@@ -39,10 +39,17 @@ let coprime a b = gcd a b = 1
 val fact_0: a:nat -> b:nat -> Lemma(coprime a b <==> gcd a b = 1)
 let fact_0 a b = ()
 
-//val abs: x:int -> Tot (y:int{ ((x >= 0) ==> (y = x)) /\ ((x < 0) ==> y = -x) })
-//let abs x =
-//  if x >= 0 then x
-//  else -x
+val abs: x:int -> Tot nat
+val abs: x:int -> Tot (y:int{((x >= 0) ==> (y = x)) /\ ((x < 0) ==> y = -x)})
+let abs x =
+  if x >= 0 then x
+  else -x
 
-//val fact_5: a:pos -> b:pos -> Lemma(coprime a b <==> isPrime (abs (a - b)))
-//let fact_5 a b = ()
+val isZeroOrPrime: a:pos -> b:pos -> Tot bool
+let isZeroOrPrime a b =
+  match a - b with
+  | 0 -> true
+  | d -> isPrime (abs d)
+
+type coprimes (a:pos) (b:pos) = (cexists (fun (c:pos) -> coprime a b))
+
