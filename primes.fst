@@ -16,10 +16,36 @@ let rec isNotDivisor n d runs =
   | 0 -> true
   | _ -> d * d > n || (notDivides n d && isNotDivisor n (d + 1) (runs - 1))
 
+let isDivisor n d = not (notDivides n d)
+
 val isPrime: x:pos -> Tot bool
 let isPrime n = n <> 1 && isNotDivisor n 2 (n / 2)
 
 type prime = x:pos{isPrime x}
+
+type stream 'a =
+  | Nil : stream 'a
+  | Cons : hd:'a -> rest:(unit -> stream 'a) -> stream 'a
+
+let rec from (n:pos) : stream pos =
+  Cons n (fun () -> from (n + 1))
+
+let rec filter (f: 'a -> bool) (s: stream 'a): stream 'a =
+  match s with
+  | Nil -> Nil
+  | Cons x g ->
+      if f x then Cons x (fun () -> filter f (g ()))
+      else filter f (g ())
+
+let sift (p:pos): stream pos -> stream pos =
+  filter (fun (n:pos) -> notDivides n p)
+
+let rec sieve (s: stream pos): stream pos =
+  match s with
+  | Nil -> Nil
+  | Cons hd rst -> Cons hd (fun () -> sieve (sift hd (rst ())))
+
+let primes = sieve (from 2)
 
 let conclusion_0 (p:prime) (n:_{1 < n /\ n < p}): Lemma (p <= 2 \/ isNotDivisor p n 1) =
   let rec f n d r (a:int{isNotDivisor n d r /\ d <= a /\ a < d + r}):
@@ -53,3 +79,4 @@ let isZeroOrPrime a b =
 
 type coprimes (a:pos) (b:pos) = (cexists (fun (c:pos) -> coprime a b))
 
+let conclusion_1 (n:int{n > 2}) (m:int{m > 1 /\ m < n}): Lemma (true) = admit()
